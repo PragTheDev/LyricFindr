@@ -3,27 +3,28 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Music, Search } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background min-w-[340px]">
-    
+    <div className="min-h-screen bg-background min-w-[340px] flex flex-col">
       <header className="border">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Music className="w-6 h-6" />
-            <h1 className="text-2xl font-bold">LyricFindr</h1>
-            <Badge variant="secondary" className="ml-2">
-              No ads • No login
-            </Badge>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Music className="w-6 h-6" />
+              <h1 className="text-2xl font-bold">LyricFindr</h1>
+              <Badge variant="secondary" className="ml-2">
+                No ads • No login
+              </Badge>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>
 
-     
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-      
-        <div className="text-center mb-8">
+      <main className="container mx-auto px-4 py-8 max-w-4xl flex-1 flex flex-col justify-center">
+        <div className="text-center mb-16">
           <h2 className="text-3xl font-bold mb-2">Get Song Lyrics Instantly</h2>
           <p className="text-muted-foreground mb-6">
             Just type a song title and get the full lyrics in seconds
@@ -40,8 +41,7 @@ export default function Home() {
           </div>
         </div>
 
-     
-        <div className="text-center mt-12">
+        <div className="text-center">
           <h3 className="text-lg font-semibold mb-4">Try searching for:</h3>
           <div className="flex flex-wrap gap-2 justify-center">
             <Button variant="outline" size="sm">
@@ -60,8 +60,7 @@ export default function Home() {
         </div>
       </main>
 
-     
-      <footer className="border-t mt-16">
+      <footer className="border-t">
         <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
           <p>Fast, simple lyrics search • No registration required</p>
         </div>
