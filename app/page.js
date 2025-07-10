@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Music, Search, Loader2, Heart, Star } from "lucide-react";
+import { Music, Search, Loader2, Heart, Star, Download } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from "react";
 import { searchLyrics } from "@/lib/search";
@@ -101,6 +101,39 @@ export default function Home() {
     setSelectedLyrics(null);
     setError(null);
     setQuery("");
+  };
+
+  const downloadLyrics = (format) => {
+    if (!selectedLyrics) return;
+
+    const { trackName, artistName, plainLyrics, syncedLyrics } = selectedLyrics;
+    const filename = `${artistName} - ${trackName}`;
+
+    let content = "";
+    let fileExtension = "";
+    let mimeType = "";
+
+    if (format === "lrc" && syncedLyrics) {
+      content = syncedLyrics;
+      fileExtension = "lrc";
+      mimeType = "text/plain";
+    } else {
+      content = `${trackName}\nBy: ${artistName}\n\n${
+        plainLyrics || "No lyrics available"
+      }`;
+      fileExtension = "txt";
+      mimeType = "text/plain";
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${filename}.${fileExtension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -284,8 +317,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Listen buttons */}
-                <div className="mt-4 flex gap-3 justify-center">
+                <div className="mt-4 flex gap-3 justify-center flex-wrap">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -308,6 +340,31 @@ export default function Home() {
                       ? "Remove from Favorites"
                       : "Add to Favorites"}
                   </Button>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadLyrics("txt")}
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 hover:border-blue-300 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700 dark:hover:bg-blue-900/30"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Download Text
+                    </Button>
+
+                    {selectedLyrics.syncedLyrics && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadLyrics("lrc")}
+                        className="bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200 hover:border-purple-300 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900/30"
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Download LRC
+                      </Button>
+                    )}
+                  </div>
+
                   <Button
                     variant="outline"
                     size="sm"
