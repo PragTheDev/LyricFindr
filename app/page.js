@@ -335,9 +335,9 @@ export default function Home() {
       <header className="border relative z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <div
-                className="flex items-center gap-4 cursor-pointer"
+                className="flex items-center gap-2 md:gap-4 cursor-pointer"
                 onClick={handleLogoClick}
               >
                 <div className="relative">
@@ -346,7 +346,7 @@ export default function Home() {
                     <Music className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">
                   Lyric
                   <span className="font-extrabold text-orange-600 dark:text-orange-400">
                     Findr
@@ -356,20 +356,20 @@ export default function Home() {
 
               <Badge
                 variant="secondary"
-                className="bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-0 shadow-sm dark:from-orange-400 dark:to-orange-500 dark:text-orange-200"
+                className="hidden sm:block bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 border-0 shadow-sm dark:from-orange-400 dark:to-orange-500 dark:text-orange-200"
               >
                 No ads • No login
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowFontSettings(!showFontSettings)}
                 className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20"
               >
-                <Settings className="w-4 h-4 mr-1" />
-                Settings
+                <Settings className="w-4 h-4 md:mr-1" />
+                <span className="hidden md:inline">Settings</span>
               </Button>
               <Button
                 variant="ghost"
@@ -377,8 +377,10 @@ export default function Home() {
                 onClick={handleFavoritesClick}
                 className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20"
               >
-                <Star className="w-4 h-4 mr-1" />
-                Favorites ({favorites.length})
+                <Star className="w-4 h-4 md:mr-1" />
+                <span className="hidden sm:inline">Favorites</span>
+                <span className="hidden sm:inline"> ({favorites.length})</span>
+                <span className="sm:hidden">({favorites.length})</span>
               </Button>
               <ThemeToggle />
             </div>
@@ -731,8 +733,35 @@ export default function Home() {
         {selectedLyrics && (
           <div className="max-w-3xl mx-auto mb-8">
             <Card className="border-orange-200/50 shadow-lg dark:border-orange-800/50">
-              <CardHeader className="bg-gradient-to-r  border-orange-200/50 dark:border-orange-800/50">
-                <div className="flex items-center justify-between">
+              <CardHeader className="bg-gradient-to-r border-orange-200/50 dark:border-orange-800/50 p-4 md:p-6">
+                {/* Mobile Layout */}
+                <div className="block md:hidden">
+                  <div className="flex items-center justify-between mb-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleBackClick}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                    >
+                      ← Back
+                    </Button>
+                  </div>
+                  <div className="text-center">
+                    <CardTitle className="text-lg font-bold mb-1 text-orange-400 leading-tight">
+                      {selectedLyrics.trackName}
+                    </CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-1 sm:gap-2 text-sm text-muted-foreground">
+                      <span className="font-medium">
+                        {selectedLyrics.artistName}
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span>{selectedLyrics.albumName}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop Layout */}
+                <div className="hidden md:flex items-center justify-between">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -786,7 +815,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-3 justify-center flex-wrap">
+                <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -810,7 +839,7 @@ export default function Home() {
                       : "Add to Favorites"}
                   </Button>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -848,38 +877,40 @@ export default function Home() {
                     )}
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const query = `${selectedLyrics.artistName} ${selectedLyrics.trackName}`;
-                      window.open(
-                        `https://open.spotify.com/search/${encodeURIComponent(
-                          query
-                        )}`,
-                        "_blank"
-                      );
-                    }}
-                    className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
-                  >
-                    🎵 Listen on Spotify
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const query = `${selectedLyrics.artistName} ${selectedLyrics.trackName}`;
-                      window.open(
-                        `https://www.youtube.com/results?search_query=${encodeURIComponent(
-                          query
-                        )}`,
-                        "_blank"
-                      );
-                    }}
-                    className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200 hover:border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/30"
-                  >
-                    📺 Watch on YouTube
-                  </Button>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const query = `${selectedLyrics.artistName} ${selectedLyrics.trackName}`;
+                        window.open(
+                          `https://open.spotify.com/search/${encodeURIComponent(
+                            query
+                          )}`,
+                          "_blank"
+                        );
+                      }}
+                      className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/30"
+                    >
+                      🎵 Listen on Spotify
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const query = `${selectedLyrics.artistName} ${selectedLyrics.trackName}`;
+                        window.open(
+                          `https://www.youtube.com/results?search_query=${encodeURIComponent(
+                            query
+                          )}`,
+                          "_blank"
+                        );
+                      }}
+                      className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200 hover:border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/30"
+                    >
+                      📺 Watch on YouTube
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-orange-200/50 dark:border-orange-800/50">
