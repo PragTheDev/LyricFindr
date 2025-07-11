@@ -15,6 +15,9 @@ import {
   Settings,
   Maximize,
   Minimize,
+  ArrowRight,
+  Copy,
+  Check,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from "react";
@@ -36,6 +39,7 @@ export default function Home() {
   const [showFontSettings, setShowFontSettings] = useState(false);
   const [backgroundAnimation, setBackgroundAnimation] = useState("waves");
   const [isLyricsMaximized, setIsLyricsMaximized] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   const [animationElements, setAnimationElements] = useState({
     stars: [],
     floating: [],
@@ -66,11 +70,10 @@ export default function Home() {
     setAnimationElements({
       stars: generateStars(),
       floating: generateFloating(),
-      waves: [], // waves don't need random elements
+      waves: [],
     });
   }, []);
 
-  // Load font settings from localStorage
   useEffect(() => {
     const savedFontSettings = localStorage.getItem("lyricfindr-font-settings");
     if (savedFontSettings) {
@@ -138,7 +141,9 @@ export default function Home() {
     try {
       const results = await searchLyrics(searchQuery);
       if (results.length === 0) {
-        setError("No lyrics found. Try different keywords.");
+        setError(
+          `No results found for "${searchQuery}". Try different keywords or check spelling.`
+        );
       } else {
         setSearchResults(results);
       }
@@ -217,6 +222,18 @@ export default function Home() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const copyToClipboard = async () => {
+    if (!selectedLyrics?.plainLyrics) return;
+
+    try {
+      await navigator.clipboard.writeText(selectedLyrics.plainLyrics);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy lyrics:", err);
+    }
   };
 
   const getFontSizeClass = () => {
@@ -604,7 +621,7 @@ export default function Home() {
 
           <form onSubmit={handleSearch} className="flex gap-2 max-w-md mx-auto">
             <Input
-              placeholder="Enter 'artist - title' (e.g., 'Queen - Bohemian Rhapsody')"
+              placeholder="Enter 'artist - title' (e.g., 'Queen - Bohemian Rhapsody') or search terms"
               className="flex-1 border-amber-600 border-2"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -617,6 +634,14 @@ export default function Home() {
               )}
             </Button>
           </form>
+
+          {/* Search Tips */}
+          <div className="mt-3 flex items-center justify-center text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Music className="w-3 h-3" />
+              <span>Search by song title, artist name, or album name</span>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -633,6 +658,23 @@ export default function Home() {
 
         {searchResults.length > 0 && !selectedLyrics && !showFavorites && (
           <div className="max-w-2xl mx-auto mb-8">
+            <div className="mb-4 p-3 bg-orange-50/50 dark:bg-orange-950/20 rounded-lg border border-orange-200/30 dark:border-orange-800/30">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Music className="w-4 h-4" />
+                  <span>
+                    Found {searchResults.length} result
+                    {searchResults.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700"
+                >
+                  {query}
+                </Badge>
+              </div>
+            </div>
             <div className="space-y-2">
               {searchResults.map((track) => (
                 <Card
@@ -769,6 +811,20 @@ export default function Home() {
                   </Button>
 
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyToClipboard}
+                      className="bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-900/30"
+                    >
+                      {copySuccess ? (
+                        <Check className="w-4 h-4 mr-1" />
+                      ) : (
+                        <Copy className="w-4 h-4 mr-1" />
+                      )}
+                      {copySuccess ? "Copied!" : "Copy Lyrics"}
+                    </Button>
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -950,7 +1006,9 @@ export default function Home() {
           !loading &&
           !showFavorites && (
             <div className="text-center">
-              <h3 className="text-lg font-semibold mb-4">Try searching for:</h3>
+              <h3 className="text-lg font-semibold mb-4 text-center text-orange-600 dark:text-orange-400">
+                Try searching for:
+              </h3>
               <div className="flex flex-wrap gap-2 justify-center">
                 <Button
                   variant="outline"
@@ -988,6 +1046,13 @@ export default function Home() {
                 >
                   Michael Jackson - Billie Jean
                 </Button>
+              </div>
+
+              <div className="mt-4 p-3 bg-orange-50/50 dark:bg-orange-950/20 rounded-lg border border-orange-200/30 dark:border-orange-800/30 max-w-md mx-auto">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 <strong>Tip:</strong> Use &ldquo;Artist - Song Title&rdquo;
+                  format for best results, or search by artist/album names
+                </p>
               </div>
             </div>
           )}
