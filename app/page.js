@@ -34,7 +34,7 @@ export default function Home() {
     lineHeight: "relaxed",
   });
   const [showFontSettings, setShowFontSettings] = useState(false);
-  const [backgroundAnimation, setBackgroundAnimation] = useState("stars");
+  const [backgroundAnimation, setBackgroundAnimation] = useState("waves");
   const [isLyricsMaximized, setIsLyricsMaximized] = useState(false);
   const [animationElements, setAnimationElements] = useState({
     stars: [],
