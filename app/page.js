@@ -18,10 +18,14 @@ import {
   ArrowRight,
   Copy,
   Check,
+  Share,
+  Keyboard,
+  X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { searchLyrics } from "@/lib/search";
+import { jsx } from "react/jsx-runtime";
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -40,13 +44,19 @@ export default function Home() {
   const [backgroundAnimation, setBackgroundAnimation] = useState("waves");
   const [isLyricsMaximized, setIsLyricsMaximized] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [shareUrlCopied, setShareUrlCopied] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [animationElements, setAnimationElements] = useState({
     stars: [],
     floating: [],
     waves: [],
   });
 
-  // Initialize animation elements once
+  const selectedResultRef = useRef(null);
+
+  const searchInputRef = useRef(null);
+
   useEffect(() => {
     const generateStars = () =>
       Array.from({ length: 50 }, (_, i) => ({
@@ -87,10 +97,10 @@ export default function Home() {
       setBackgroundAnimation(savedAnimation);
     }
   }, []);
-
   useEffect(() => {
     const savedFavorites = localStorage.getItem("lyricfindr-favorites");
     if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
       setFavorites(JSON.parse(savedFavorites));
     }
   }, []);
@@ -99,7 +109,31 @@ export default function Home() {
     localStorage.setItem("lyricfindr-favorites", JSON.stringify(favorites));
   }, [favorites]);
 
-  // Save font settings to localStorage
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedTrack = urlParams.get("track");
+    const sharedArtist = urlParams.get("artist");
+    const sharedId = urlParams.get("id");
+
+    if (sharedTrack && sharedArtist && sharedId) {
+      const searchQuery = `${sharedArtist} ${sharedTrack}`;
+      setQuery(searchQuery);
+      performSearch(searchQuery).then(() => {
+        setTimeout(() => {
+          setSearchResults((prevResults) => {
+            const matchedTrack = prevResults.find(
+              (track) => track.id === parseInt(sharedId)
+            );
+            if (matchedTrack) {
+              setSelectedLyrics(matchedTrack);
+            }
+            return prevResults;
+          });
+        }, 1000);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(
       "lyricfindr-font-settings",
@@ -107,13 +141,116 @@ export default function Home() {
     );
   }, [fontSettings]);
 
-  // Save background animation preference
   useEffect(() => {
     localStorage.setItem(
       "lyricfindr-background-animation",
       backgroundAnimation
     );
   }, [backgroundAnimation]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (window.innerWidth <= 768) return;
+
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+          e.preventDefault();
+          if (searchInputRef.current) {
+            searchInputRef.current.focus();
+            searchInputRef.current.select();
+          }
+        }
+        return;
+      }
+
+      // Focus search input (Cmd/Ctrl + K)
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+        return;
+      }
+
+      // Show shortcuts modal (?)
+      if (e.key === "?" && !e.shiftKey) {
+        e.preventDefault();
+        setShowShortcutsModal(true);
+        return;
+      }
+
+      // Close modals/go back (Esc)
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (showShortcutsModal) {
+          setShowShortcutsModal(false);
+        } else if (showFontSettings) {
+          setShowFontSettings(false);
+        } else if (selectedLyrics) {
+          handleBackClick();
+        } else if (showFavorites) {
+          setShowFavorites(false);
+        }
+        return;
+      }
+
+      // Navigate search results with arrow keys
+      if (searchResults.length > 0 && !selectedLyrics && !showFavorites) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedResultIndex((prev) =>
+            prev < searchResults.length - 1 ? prev + 1 : 0
+          );
+          return;
+        }
+
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedResultIndex((prev) =>
+            prev > 0 ? prev - 1 : searchResults.length - 1
+          );
+          return;
+        }
+
+        // Select result with Enter
+        if (e.key === "Enter" && selectedResultIndex >= 0) {
+          e.preventDefault();
+          const selectedTrack = searchResults[selectedResultIndex];
+          if (selectedTrack) {
+            handleSelectTrack(selectedTrack);
+          }
+          return;
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    query,
+    searchResults,
+    selectedLyrics,
+    showFavorites,
+    showFontSettings,
+    showShortcutsModal,
+    selectedResultIndex,
+  ]);
+
+  // Reset selected result index when search results change
+  useEffect(() => {
+    setSelectedResultIndex(-1);
+  }, [searchResults]);
+
+  // Scroll to selected result when using keyboard navigation
+  useEffect(() => {
+    if (selectedResultIndex >= 0 && selectedResultRef.current) {
+      selectedResultRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [selectedResultIndex]);
 
   const toggleFavorite = (track) => {
     setFavorites((prev) => {
@@ -233,6 +370,32 @@ export default function Home() {
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error("Failed to copy lyrics:", err);
+    }
+  };
+
+  const shareViaUrl = async () => {
+    if (!selectedLyrics) return;
+
+    const shareUrl = new URL(window.location.origin + window.location.pathname);
+    shareUrl.searchParams.set("track", selectedLyrics.trackName);
+    shareUrl.searchParams.set("artist", selectedLyrics.artistName);
+    shareUrl.searchParams.set("id", selectedLyrics.id.toString());
+
+    const shareUrlString = shareUrl.toString();
+
+    try {
+      await navigator.clipboard.writeText(shareUrlString);
+      setShareUrlCopied(true);
+      setTimeout(() => setShareUrlCopied(false), 2000);
+
+      // Update the current URL without triggering a page reload
+      window.history.replaceState({}, "", shareUrlString);
+    } catch (err) {
+      console.error("Failed to copy share URL:", err);
+      // Fallback: just update the URL if clipboard fails
+      window.history.replaceState({}, "", shareUrlString);
+      setShareUrlCopied(true);
+      setTimeout(() => setShareUrlCopied(false), 2000);
     }
   };
 
@@ -381,6 +544,16 @@ export default function Home() {
                 <span className="hidden sm:inline">Favorites</span>
                 <span className="hidden sm:inline"> ({favorites.length})</span>
                 <span className="sm:hidden">({favorites.length})</span>
+              </Button>
+              {/* Desktop-only Keyboard Shortcuts Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowShortcutsModal(true)}
+                className="hidden md:flex text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                title="Keyboard Shortcuts (?)"
+              >
+                <Keyboard className="w-4 h-4" />
               </Button>
               <ThemeToggle />
             </div>
@@ -558,6 +731,77 @@ export default function Home() {
           </div>
         )}
 
+        {/* Keyboard Shortcuts Modal */}
+        {showShortcutsModal && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowShortcutsModal(false);
+              }
+            }}
+          >
+            <div className="max-w-md w-full">
+              <Card className="border-orange-200/50 shadow-2xl dark:border-orange-800/50 bg-background">
+                <CardHeader className="relative text-center">
+                  <CardTitle className="text-orange-600 dark:text-orange-400">
+                    <Keyboard className="w-5 h-5 inline mr-2" />
+                    Keyboard Shortcuts
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowShortcutsModal(false)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-sm text-muted-foreground mb-4">
+                    These shortcuts work on desktop only
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Focus search</span>
+                      <kbd className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded border">
+                        {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} + K
+                      </kbd>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Navigate results</span>
+                      <div className="flex gap-1">
+                        <kbd className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded border">
+                          ↑
+                        </kbd>
+                        <kbd className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded border">
+                          ↓
+                        </kbd>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Select result</span>
+                      <kbd className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded border">
+                        Enter
+                      </kbd>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Go back / Close</span>
+                      <kbd className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded border">
+                        Esc
+                      </kbd>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
         {/* Maximized Lyrics Modal */}
         {isLyricsMaximized && selectedLyrics && (
           <div
@@ -627,6 +871,7 @@ export default function Home() {
               className="flex-1 border-amber-600 border-2"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              ref={searchInputRef}
             />
             <Button type="submit" disabled={loading}>
               {loading ? (
@@ -678,11 +923,16 @@ export default function Home() {
               </div>
             </div>
             <div className="space-y-2">
-              {searchResults.map((track) => (
+              {searchResults.map((track, index) => (
                 <Card
                   key={track.id}
-                  className="cursor-pointer hover:bg-muted/50 hover:border-orange-200 transition-all duration-200 border-2 shadow-sm hover:shadow-md dark:hover:border-orange-700"
+                  className={`cursor-pointer hover:bg-muted/50 hover:border-orange-200 transition-all duration-200 border-2 shadow-sm hover:shadow-md dark:hover:border-orange-700 ${
+                    selectedResultIndex === index
+                      ? "border-orange-400 bg-orange-50/50 dark:border-orange-600 dark:bg-orange-900/20"
+                      : ""
+                  }`}
                   onClick={() => handleSelectTrack(track)}
+                  ref={selectedResultIndex === index ? selectedResultRef : null}
                 >
                   <CardContent>
                     <div className="flex justify-between items-center">
@@ -852,6 +1102,20 @@ export default function Home() {
                         <Copy className="w-4 h-4 mr-1" />
                       )}
                       {copySuccess ? "Copied!" : "Copy Lyrics"}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={shareViaUrl}
+                      className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 hover:border-orange-300 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700 dark:hover:bg-orange-900/30"
+                    >
+                      {shareUrlCopied ? (
+                        <Check className="w-4 h-4 mr-1" />
+                      ) : (
+                        <Share className="w-4 h-4 mr-1" />
+                      )}
+                      {shareUrlCopied ? "URL Copied!" : "Share"}
                     </Button>
 
                     <Button
