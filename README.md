@@ -12,7 +12,7 @@ Lyric Findr is a lightweight and fast web app that lets you search and retrieve 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/lyric-findr.git
+git clone https://github.com/PragTheDev/lyric-findr.git
 cd lyric-findr
 ```
 
