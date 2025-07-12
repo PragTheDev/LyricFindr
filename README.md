@@ -2,8 +2,8 @@
 
 Lyric Findr is a lightweight and fast web app that lets you search and retrieve synced `.lrc` lyrics for any song using the [LRC Lib](https://lrclib.net/) API. Perfect for music lovers and karaoke fans.
 
-![dark](lyricfindrwhite.png)
-![white](lyricfindrdark.png)
+![light](lyricfindrlight.png)
+![dark](lyricfindrdark.png)
 
 ---
 
